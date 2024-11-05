@@ -16,7 +16,6 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# Set background image from a local file
 def set_background(png_file):
     bin_str = get_base64_of_bin_file(png_file)
     background_image = f"""
@@ -73,13 +72,11 @@ if file:
 
         if user_question and user_question != "":
             with st.spinner(text="In progress..."):
-                # Formulate input for the VisualQuestionAnsweringTool
                 if "detect" in user_question.lower() or "object" in user_question.lower():
                     response = agent.run('Detect objects in this image: {}'.format(image_path))
                 elif "describe" in user_question.lower() or "caption" in user_question.lower():
                     response = agent.run('Describe the image: {}'.format(image_path))
                 else:
-                    # Pass question and image path together for VQA
                     vqa_input = f"{user_question} ### {image_path}"
                     response = agent.run(f"Answer this question about the image: {vqa_input}")
                 
