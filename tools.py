@@ -4,7 +4,7 @@ from PIL import Image
 import torch
 
 class ImageCaptionTool(BaseTool):
-    name: str = "Image Captioner"  # Added type annotation
+    name: str = "Image Captioner" 
     description: str = "Use this tool when given the path to an image that you would like to be described. " \
                        "It will return a simple caption describing the image."
 
@@ -26,7 +26,7 @@ class ImageCaptionTool(BaseTool):
         raise NotImplementedError("This tool does not support async.")
 
 class ObjectDetectionTool(BaseTool):
-    name: str = "Object Detector"  # Added type annotation
+    name: str = "Object Detector" 
     description: str = "Use this tool when given the path to an image that you would like to detect objects. " \
                        "It will return a list of all detected objects. Each element in the list in the format: " \
                        "[x1, y1, x2, y2] class_name confidence_score."
@@ -40,7 +40,6 @@ class ObjectDetectionTool(BaseTool):
         inputs = processor(images=image, return_tensors="pt")
         outputs = model(**inputs)
 
-        # Convert outputs (bounding boxes and class logits) to COCO API format, filtering with score > 0.9
         target_sizes = torch.tensor([image.size[::-1]])
         results = processor.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.9)[0]
 
@@ -60,8 +59,7 @@ class VisualQuestionAnsweringTool(BaseTool):
     description: str = "Use this tool when you have a question about the content of an image. Pass the question and the image path in a single string, separated by a special delimiter."
 
     def _run(self, input_text: str) -> str:
-        # Split the input to get the question and image path
-        delimiter = "###"  # Define a unique delimiter
+        delimiter = "###"  # Defined a unique delimiter...
         try:
             question, img_path = input_text.split(delimiter)
         except ValueError:
