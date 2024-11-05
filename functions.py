@@ -27,8 +27,6 @@ def detect_objects(image_path):
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
 
-    # convert outputs (bounding boxes and class logits) to COCO API
-    # let's only keep detections with score > 0.9
     target_sizes = torch.tensor([image.size[::-1]])
     results = processor.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.9)[0]
 
