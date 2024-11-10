@@ -6,4 +6,6 @@ View and working of the application
 
 ![image](https://github.com/user-attachments/assets/3812bb5c-aea3-4fca-b4e7-313fbaa8c20a)
 
-![image](https://github.com/user-attachments/assets/795b70e9-c09b-4cb7-85ed-c0e38fb30cb8)
+![image](https://github.com/user-attachments/assets/40a1c150-2ab3-4f47-9515-b78129848050)
+
+etc...
