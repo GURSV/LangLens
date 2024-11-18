@@ -1,5 +1,5 @@
 from langchain.tools import BaseTool
-from transformers import BlipProcessor, BlipForConditionalGeneration, DetrImageProcessor, DetrForObjectDetection
+from transformers import BlipProcessor, BlipForConditionalGeneration, DetrImageProcessor, DetrForObjectDetection, ViltProcessor, ViltForQuestionAnswering
 from PIL import Image 
 import torch
 
@@ -55,7 +55,7 @@ class ObjectDetectionTool(BaseTool):
         raise NotImplementedError("This tool does not support async.")
     
 class VisualQuestionAnsweringTool(BaseTool):
-    name: str = "Visual Question Answering"  
+    name: str = "Visual Question Answering"
     description: str = "Use this tool when you have a question about the content of an image. Pass the question and the image path in a single string, separated by a special delimiter."
 
     def _run(self, input_text: str) -> str:
@@ -65,17 +65,25 @@ class VisualQuestionAnsweringTool(BaseTool):
         except ValueError:
             return "Error: Please format input as 'question ### image_path'."
 
-        image = Image.open(img_path.strip()).convert('RGB')
-        model_name = "Salesforce/blip-vqa-base"  
+        try:
+            image = Image.open(img_path.strip()).convert('RGB')
+        except Exception as e:
+            return f"Error loading image: {e}"
+
+        model_name = "dandelin/vilt-b32-finetuned-vqa"
         device = "cpu"
 
-        processor = BlipProcessor.from_pretrained(model_name)
-        model = BlipForConditionalGeneration.from_pretrained(model_name).to(device)
+        processor = ViltProcessor.from_pretrained(model_name)
+        model = ViltForQuestionAnswering.from_pretrained(model_name).to(device)
 
         inputs = processor(image, question.strip(), return_tensors='pt').to(device)
-        output = model.generate(**inputs)
+        outputs = model(**inputs)
+        logits = outputs.logits
 
-        answer = processor.decode(output[0], skip_special_tokens=True)
+        # Get the index of the answer with the highest logit score
+        predicted_idx = logits.argmax(-1).item()
+        answer = model.config.id2label[predicted_idx]
+
         return answer
 
     def _arun(self, query: str):
