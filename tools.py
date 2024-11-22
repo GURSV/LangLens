@@ -2,6 +2,7 @@ from langchain.tools import BaseTool
 from transformers import BlipProcessor, BlipForConditionalGeneration, DetrImageProcessor, DetrForObjectDetection, ViltProcessor, ViltForQuestionAnswering
 from PIL import Image 
 import torch
+import os
 
 class ImageCaptionTool(BaseTool):
     name: str = "Image Captioner" 
@@ -53,13 +54,16 @@ class ObjectDetectionTool(BaseTool):
 
     def _arun(self, query: str):
         raise NotImplementedError("This tool does not support async.")
-    
+
 class VisualQuestionAnsweringTool(BaseTool):
     name: str = "Visual Question Answering"
-    description: str = "Use this tool when you have a question about the content of an image. Pass the question and the image path in a single string, separated by a special delimiter."
+    description: str = (
+        "Use this tool when you have a question about the content of an image. "
+        "Pass the question and the image path in a single string, separated by a special delimiter."
+    )
 
     def _run(self, input_text: str) -> str:
-        delimiter = "###"  # Defined a unique delimiter...
+        delimiter = "###"
         try:
             question, img_path = input_text.split(delimiter)
         except ValueError:
@@ -70,21 +74,44 @@ class VisualQuestionAnsweringTool(BaseTool):
         except Exception as e:
             return f"Error loading image: {e}"
 
-        model_name = "dandelin/vilt-b32-finetuned-vqa"
-        device = "cpu"
+        checkpoint_path = "checkpoint-1017"
+        fallback_model_name = "dandelin/vilt-b32-finetuned-vqa"
+        device = "cpu" 
 
-        processor = ViltProcessor.from_pretrained(model_name)
-        model = ViltForQuestionAnswering.from_pretrained(model_name).to(device)
+        try:
+            processor_path = os.path.join(checkpoint_path, "preprocessor_config.json")
+            if not os.path.exists(processor_path):
+                raise FileNotFoundError("Custom checkpoint missing `preprocessor_config.json`.")
 
-        inputs = processor(image, question.strip(), return_tensors='pt').to(device)
-        outputs = model(**inputs)
-        logits = outputs.logits
+            processor = ViltProcessor.from_pretrained(checkpoint_path)
+            model = ViltForQuestionAnswering.from_pretrained(checkpoint_path).to(device)
 
-        # Get the index of the answer with the highest logit score
-        predicted_idx = logits.argmax(-1).item()
-        answer = model.config.id2label[predicted_idx]
+            inputs = processor(image, question.strip(), return_tensors='pt').to(device)
+            outputs = model(**inputs)
+            logits = outputs.logits
 
-        return answer
+            predicted_idx = logits.argmax(-1).item()
+            answer = model.config.id2label[predicted_idx]
+
+            if answer:
+                return answer
+        except Exception as e:
+            print(f"Checkpoint failed with error: {e}. Falling back to default model.")
+
+        try:
+            processor = ViltProcessor.from_pretrained(fallback_model_name)
+            model = ViltForQuestionAnswering.from_pretrained(fallback_model_name).to(device)
+
+            inputs = processor(image, question.strip(), return_tensors='pt').to(device)
+            outputs = model(**inputs)
+            logits = outputs.logits
+
+            predicted_idx = logits.argmax(-1).item()
+            answer = model.config.id2label[predicted_idx]
+
+            return answer
+        except Exception as e:
+            return f"Error with fallback model: {e}"
 
     def _arun(self, query: str):
         raise NotImplementedError("This tool does not support async.")
